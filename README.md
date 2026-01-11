@@ -58,13 +58,13 @@
 
 Следуйте этапам ниже для установки пакета в ваш Unity проект:
 
-### Этап 1: Установка NuGetPackages -> https://github.com/GlitchEnzo/NuGetForUnity
+Этап 1: Установка NuGetPackages -> https://github.com/GlitchEnzo/NuGetForUnity
 
-### Этап 2: Установка R3 -> https://github.com/Cysharp/R3?tab=readme-ov-file#unity
+Этап 2: Установка R3 -> https://github.com/Cysharp/R3?tab=readme-ov-file#unity
 
-### Этап 3: Установка UniTask -> https://github.com/Cysharp/UniTask?tab=readme-ov-file#install-via-git-url
+Этап 3: Установка UniTask -> https://github.com/Cysharp/UniTask?tab=readme-ov-file#install-via-git-url
 
-### Этап 4: Установка SimpleUIScreensSystem
+Этап 4: Установка SimpleUIScreensSystem
 
 Теперь установите сам пакет.
 
