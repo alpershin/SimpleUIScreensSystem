@@ -58,147 +58,23 @@
 
 Следуйте этапам ниже для установки пакета в ваш Unity проект:
 
-### Этап 1: Установка NuGetPackages
+### Этап 1: Установка NuGetPackages -> https://github.com/GlitchEnzo/NuGetForUnity
 
-Some компоненты системы требуют поддержку NuGet пакетов. Установите NuGetForUnity:
+### Этап 2: Установка R3 -> https://github.com/Cysharp/R3?tab=readme-ov-file#unity
 
-1. Откройте **Package Manager** в Unity (`Window > TextAsset > Package Manager`)
-2. Нажмите кнопку **"+"** и выберите **"Add package from git URL..."**
-3. Вставьте ссылку:
-   ```
-   https://github.com/GlitchEnzo/NuGetForUnity.git
-   ```
-4. Нажмите **Add**
-5. Дождитесь завершения установки
-
-### Этап 2: Установка R3
-
-R3 — это реактивный фреймворк для Unity, необходимый для работы системы.
-
-1. Откройте **Package Manager** (`Window > TextAsset > Package Manager`)
-2. Нажмите **"+"** и выберите **"Add package from git URL..."**
-3. Вставьте ссылку:
-   ```
-   https://github.com/Cysharp/R3.git?path=src/R3.Unity
-   ```
-4. Нажмите **Add**
-5. Дождитесь завершения установки
-
-### Этап 3: Установка UniTask
-
-UniTask — это асинхронная библиотека для Unity, используется для неблокирующих операций.
-
-1. Откройте **Package Manager** (`Window > TextAsset > Package Manager`)
-2. Нажмите **"+"** и выберите **"Add package from git URL..."**
-3. Вставьте ссылку:
-   ```
-   https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
-   ```
-4. Нажмите **Add**
-5. Дождитесь завершения установки
+### Этап 3: Установка UniTask -> https://github.com/Cysharp/UniTask?tab=readme-ov-file#install-via-git-url
 
 ### Этап 4: Установка SimpleUIScreensSystem
 
 Теперь установите сам пакет.
 
-1. Откройте **Package Manager** (`Window > TextAsset > Package Manager`)
+1. Откройте **Package Manager**
 2. Нажмите **"+"** и выберите **"Add package from git URL..."**
 3. Вставьте ссылку:
    ```
    https://github.com/alpershin/SimpleUIScreensSystem.git
    ```
 4. Нажмите **Add**
-5. Дождитесь завершения установки
-
-## Быстрый старт
-
-### 1. Определение типов экранов
-
-Отредактируйте файл `EScreenType.cs` и добавьте типы ваших экранов:
-
-```csharp
-public enum EScreenType
-{
-    None = 0,
-    MainMenu = 1,
-    Settings = 2,
-    Gameplay = 3,
-    PauseMenu = 4
-}
-```
-
-### 2. Создание экрана
-
-Создайте скрипт, наследующийся от `UIScreen`:
-
-```csharp
-public class MainMenuScreen : UIScreen
-{
-    [SerializeField] private Button startButton;
-    [SerializeField] private Button settingsButton;
-
-    public override void Init()
-    {
-        base.Init();
-        _type = EScreenType.MainMenu;
-        
-        startButton.onClick.AddListener(OnStartClicked);
-        settingsButton.onClick.AddListener(OnSettingsClicked);
-    }
-
-    private void OnStartClicked()
-    {
-        // Логика при нажатии на кнопку
-    }
-
-    private void OnSettingsClicked()
-    {
-        // Логика для открытия настроек
-    }
-}
-```
-
-### 3. Использование UINavigator
-
-```csharp
-public class GameManager : MonoBehaviour
-{
-    private UINavigator _uiNavigator;
-
-    private void Start()
-    {
-        _uiNavigator = GetComponent<UINavigator>();
-        
-        // Регистрация экранов
-        _uiNavigator.Add(GetComponent<MainMenuScreen>());
-        _uiNavigator.Add(GetComponent<SettingsScreen>());
-        
-        // Открытие главного меню
-        _uiNavigator.Open(EScreenType.MainMenu);
-    }
-}
-```
-
-## Примеры использования
-
-### Открытие экрана с анимацией
-
-```csharp
-public class UIScreen : MonoBehaviour
-{
-    protected async UniTask OpenWithAnimation()
-    {
-        var animation = GetComponent<UIScreenOpenCloseAnimation>();
-        await animation.FadeIn();
-    }
-}
-```
-
-### Закрытие всех экранов
-
-```csharp
-_uiNavigator.CloseAll();
-```
 
 ## Требования
 
