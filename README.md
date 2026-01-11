@@ -33,36 +33,18 @@
 - `CloseAll()` — закрытие всех открытых экранов
 - `GetScreen(EScreenType screenType)` — получение экрана
 
-### UIScreenOpenCloseAnimation
-Утилита для анимации открытия и закрытия экранов. Поддерживает fade и scale эффекты.
-
-**Основные методы:**
-- `FadeIn()` — плавное появление экрана
-- `FadeOut()` — плавное исчезновение экрана
-- `ScaleAnimation()` — масштабирующая анимация
-
 ### EScreenType
 Перечисление для определения типов экранов в проекте. Позволяет использовать типобезопасный способ обращения к экранам.
-
-### Easing
-Утилита с функциями интерполяции для анимаций.
-
-**Доступные функции:**
-- `Linear()` — линейная интерполяция
-- `Spring()` — пружинная интерполяция
-- `EaseInQuad()`, `EaseOutQuad()` — квадратичная интерполяция
-- `EaseInCubic()`, `EaseOutCubic()` — кубическая интерполяция
-- и многие другие...
 
 ## Установка
 
 Следуйте этапам ниже для установки пакета в ваш Unity проект:
 
-Этап 1: Установка NuGetPackages -> https://github.com/GlitchEnzo/NuGetForUnity
+Этап 1: Установка NuGetPackages -> [Инструкция по установке NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity)
 
-Этап 2: Установка R3 -> https://github.com/Cysharp/R3?tab=readme-ov-file#unity
+Этап 2: Установка R3 -> [Инструкция по установке R3 для Unity](https://github.com/Cysharp/R3?tab=readme-ov-file#unity)
 
-Этап 3: Установка UniTask -> https://github.com/Cysharp/UniTask?tab=readme-ov-file#install-via-git-url
+Этап 3: Установка UniTask -> [Инструкция по установке UniTask](https://github.com/Cysharp/UniTask?tab=readme-ov-file#install-via-git-url)
 
 Этап 4: Установка SimpleUIScreensSystem
 
