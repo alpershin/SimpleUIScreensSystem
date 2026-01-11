@@ -2,7 +2,6 @@
 
 using System;
 using System.Linq;
-using Game.Scripts.UI;
 using R3;
 using UnityEngine;
 using UnityEngine.UI;
