@@ -38,18 +38,6 @@
 
 ## Установка
 
-Следуйте этапам ниже для установки пакета в ваш Unity проект:
-
-Этап 1: Установка NuGetPackages -> [Инструкция по установке NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity)
-
-Этап 2: Установка R3 -> [Инструкция по установке R3 для Unity](https://github.com/Cysharp/R3?tab=readme-ov-file#unity)
-
-Этап 3: Установка UniTask -> [Инструкция по установке UniTask](https://github.com/Cysharp/UniTask?tab=readme-ov-file#install-via-git-url)
-
-Этап 4: Установка SimpleUIScreensSystem
-
-Теперь установите сам пакет.
-
 1. Откройте **Package Manager**
 2. Нажмите **"+"** и выберите **"Add package from git URL..."**
 3. Вставьте ссылку:
@@ -57,12 +45,6 @@
    https://github.com/alpershin/SimpleUIScreensSystem.git
    ```
 4. Нажмите **Add**
-
-## Требования
-
-- **Unity:** 2021.3 или выше
-- **UniTask:** 2.5.0 или выше
-- **R3:** 1.0.0 или выше
 
 ## Лицензия
 
