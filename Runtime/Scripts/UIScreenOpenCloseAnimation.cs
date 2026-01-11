@@ -1,8 +1,7 @@
 #region Libraries
 
 using System;
-using Cysharp.Threading.Tasks;
-using System.Threading;
+using System.Collections;
 using UnityEngine;
 
 #endregion
@@ -11,8 +10,10 @@ namespace SimpleUIScreensSystem
 {
     public class UIScreenOpenCloseAnimation : IDisposable
     {
-        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        
+        private MonoBehaviour _monoBehaviour;
+        private Coroutine _fadeCoroutine;
+        private Coroutine _scaleCoroutine;
+
         private CanvasGroup _screenGroup;
         private Transform _modal;
 
@@ -21,12 +22,13 @@ namespace SimpleUIScreensSystem
         private float _screenWindowScaleTarget => 1f;
         private float _screenWindowScaleStart => 0.1f;
 
-        public void Init(CanvasGroup screen, Transform modalWindow = null)
+        public void Init(CanvasGroup screen, Transform modalWindow = null, MonoBehaviour monoBehaviour = null)
         {
             _screenGroup = screen;
             _modal = modalWindow;
+            _monoBehaviour = monoBehaviour;
         }
-        
+
         public void FadeIn(Action onFinish = null)
         {
             Show(0f, 1f, _screenWindowScaleStart, _screenWindowScaleTarget, onFinish);
@@ -36,41 +38,40 @@ namespace SimpleUIScreensSystem
         {
             Show(1f, 0f, _screenWindowScaleTarget, _screenWindowScaleStart, onFinish);
         }
-        
+
         private void Show(float screenAlphaFrom, float screenAlphaTo, float modalWindowFrom, float modalWindowTo, Action onFinish = null)
         {
-            if (_screenGroup == null) return;
-            
-            Dispose();
-            _cancellationTokenSource = new CancellationTokenSource();
+            if (_screenGroup == null || _monoBehaviour == null) return;
 
-            FadeAnimation(screenAlphaFrom, screenAlphaTo, onFinish).Forget();
+            Dispose();
+
+            _fadeCoroutine = _monoBehaviour.StartCoroutine(FadeAnimation(screenAlphaFrom, screenAlphaTo, onFinish));
 
             if (_modal == null) return;
-               
-            ScaleAnimation(modalWindowFrom, modalWindowTo).Forget();
+
+            _scaleCoroutine = _monoBehaviour.StartCoroutine(ScaleAnimation(modalWindowFrom, modalWindowTo));
         }
-        
-        private async UniTask FadeAnimation(float from, float to, Action onFinish = null)
+
+        private IEnumerator FadeAnimation(float from, float to, Action onFinish = null)
         {
             _screenGroup.alpha = from;
             for (float i = 0f; i < 1f; i += Time.deltaTime / _screenFadeDuration)
             {
                 _screenGroup.alpha = Easing.easeInCubic(from, to, i);
-                await UniTask.Yield(_cancellationTokenSource.Token);
+                yield return null;
             }
 
             _screenGroup.alpha = to;
             onFinish?.Invoke();
         }
-        
-        private async UniTask ScaleAnimation(float from, float to)
+
+        private IEnumerator ScaleAnimation(float from, float to)
         {
             _modal.localScale = Vector3.one * from;
             for (float i = 0f; i < 1f; i += Time.deltaTime / _screenWindowScaleDuration)
             {
                 _modal.localScale = Vector3.one * Easing.easeInSine(from, to, i);
-                await UniTask.Yield(_cancellationTokenSource.Token);
+                yield return null;
             }
 
             _modal.localScale = Vector3.one * to;
@@ -78,10 +79,19 @@ namespace SimpleUIScreensSystem
 
         public void Dispose()
         {
-            if (_cancellationTokenSource == null) return;
+            if (_monoBehaviour == null) return;
 
-            _cancellationTokenSource?.Cancel();
-            _cancellationTokenSource?.Dispose();
+            if (_fadeCoroutine != null)
+            {
+                _monoBehaviour.StopCoroutine(_fadeCoroutine);
+                _fadeCoroutine = null;
+            }
+
+            if (_scaleCoroutine != null)
+            {
+                _monoBehaviour.StopCoroutine(_scaleCoroutine);
+                _scaleCoroutine = null;
+            }
         }
     }
 }

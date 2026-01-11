@@ -1,9 +1,7 @@
 #region Libraries
 
-using System;
-using System.Linq;
-using R3;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 #endregion
@@ -11,52 +9,50 @@ using UnityEngine.UI;
 namespace SimpleUIScreensSystem
 {
     [RequireComponent(typeof(CanvasGroup))]
-    public abstract class UIScreen : MonoBehaviour, IDisposable
+    public abstract class UIScreen : MonoBehaviour
     {
-        private readonly CompositeDisposable _lifetimeDisposable = new CompositeDisposable();
-        
         [SerializeField] private EScreenType _type;
         [SerializeField] private Button[] _closeButton;
         [SerializeField] protected Transform _modalWindow;
         [SerializeField] private bool _withAnimation;
-        
-        private ReactiveCommand<Unit> _onClosed = new ReactiveCommand<Unit>();
-        private ReactiveCommand<Unit> _onOpen = new ReactiveCommand<Unit>();
+
+        private UnityEvent _onClosed = new UnityEvent();
+        private UnityEvent _onOpen = new UnityEvent();
 
         private UIScreenOpenCloseAnimation _animation = new UIScreenOpenCloseAnimation();
-        
+
         public EScreenType Type => _type;
-         
-        public Observable<Unit> OnClosed => _onClosed;
-        public Observable<Unit> OnOpen => _onOpen;
-        
+
+        public UnityEvent OnClosed => _onClosed;
+        public UnityEvent OnOpen => _onOpen;
+
         public bool IsOpen => gameObject.activeSelf;
 
         protected virtual void Awake()
         {
             if (_closeButton is not { Length: > 0 }) return;
 
-            _closeButton.Select(b => b.OnClickAsObservable())
-                .Merge()
-                .Subscribe(_ => Close())
-                .AddTo(_lifetimeDisposable);
+            foreach (var button in _closeButton)
+            {
+                button.onClick.AddListener(Close);
+            }
         }
 
         private void OnEnable()
         {
-            _onOpen?.Execute(Unit.Default);
+            _onOpen?.Invoke();
         }
 
         private void OnDisable()
         {
-            _onClosed?.Execute(Unit.Default);
+            _onClosed?.Invoke();
         }
 
         public virtual void Init()
         {
             _animation.Init(GetComponent<CanvasGroup>(), _modalWindow);
         }
-        
+
         public virtual void Open()
         {
             if (_animation == null || !_withAnimation)
@@ -64,7 +60,7 @@ namespace SimpleUIScreensSystem
                 gameObject.SetActive(true);
                 return;
             }
-            
+
             gameObject.SetActive(true);
             _animation.FadeIn();
         }
@@ -76,15 +72,8 @@ namespace SimpleUIScreensSystem
                 gameObject.SetActive(false);
                 return;
             }
-            
-            _animation.FadeOut(() => gameObject.SetActive(false));
-        }
 
-        public virtual void Dispose()
-        {
-            _lifetimeDisposable?.Dispose();
-            _onClosed?.Dispose();
-            _onOpen?.Dispose();
+            _animation.FadeOut(() => gameObject.SetActive(false));
         }
     }
 }
