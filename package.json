@@ -4,5 +4,5 @@
   "displayName": "Simple UI Screens System",
   "description": "A simple and efficient UI screen management system for Unity projects, enabling easy switching between screens, state management, handling open/close animations, integrating modal windows, and reactive logic based on C# scripts.",
   "unity": "2021.3",
-  "dependencies": {},
+  "dependencies": {}
 }
