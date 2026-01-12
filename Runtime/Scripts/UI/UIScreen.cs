@@ -17,14 +17,14 @@ namespace SimpleUIScreensSystem
         [SerializeField] private bool _withAnimation;
 
         private UnityEvent _onClosed = new UnityEvent();
-        private UnityEvent _onOpen = new UnityEvent();
+        private UnityEvent _onOpened = new UnityEvent();
 
         private UIScreenOpenCloseAnimation _animation = new UIScreenOpenCloseAnimation();
 
         public EScreenType Type => _type;
 
         public UnityEvent OnClosed => _onClosed;
-        public UnityEvent OnOpen => _onOpen;
+        public UnityEvent OnOpened => _onOpened;
 
         public bool IsOpen => gameObject.activeSelf;
 
@@ -40,7 +40,7 @@ namespace SimpleUIScreensSystem
 
         private void OnEnable()
         {
-            _onOpen?.Invoke();
+            _onOpened?.Invoke();
         }
 
         private void OnDisable()
@@ -50,7 +50,7 @@ namespace SimpleUIScreensSystem
 
         public virtual void Init()
         {
-            _animation.Init(GetComponent<CanvasGroup>(), _modalWindow);
+            _animation.Init(GetComponent<CanvasGroup>(), _modalWindow, Coroutines.Runner);
         }
 
         public virtual void Open()

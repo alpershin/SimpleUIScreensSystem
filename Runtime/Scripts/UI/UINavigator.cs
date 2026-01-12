@@ -10,11 +10,15 @@ namespace SimpleUIScreensSystem
 {
     public class UINavigator
     {
+        private static UINavigator _instance;
+        
         private List<UIScreen> _screens = new List<UIScreen>();
         private List<UIScreen> _openedScreens = new List<UIScreen>();
 
         public int OpenedScreensCount => _openedScreens.Count;
 
+        public static UINavigator Instance => _instance ??= new UINavigator();
+        
         public void Add(UIScreen screen)
         {
             if (_screens.Contains(screen)) return;
