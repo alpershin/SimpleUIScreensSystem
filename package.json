@@ -6,8 +6,8 @@
   "unity": "2021.3",
   "samples": [
     {
-      "displayName": "Main Menu Example",
-      "description": "Пример главного меню",
+      "displayName": "Demo",
+      "description": "Demo of this UI system",
       "path": "Example~/Demo"
     }
   ]
