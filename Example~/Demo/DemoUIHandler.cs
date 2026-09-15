@@ -1,5 +1,6 @@
 #region Libraries
 
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,16 +12,33 @@ namespace SimpleUIScreensSystem.Demo
     {
         [SerializeField] protected Button _openDemoScreenButton;
 
-        private UINavigator _navigator => UINavigator.Instance;
-        
+        private UIScreen _demoScreen;
+
+        private static UINavigator Navigator => UINavigator.Instance;
+
         private void Awake()
         {
-            var demoScreen = _navigator.GetScreen(EScreenType.DemoScreen);
-            
-            demoScreen.OnOpened.AddListener(() => _openDemoScreenButton.gameObject.SetActive(false));
-            demoScreen.OnClosed.AddListener(() => _openDemoScreenButton.gameObject.SetActive(true));
-            
-            _openDemoScreenButton.onClick.AddListener(() => _navigator.Open(EScreenType.DemoScreen));
+            if (!Navigator.TryGetScreen(DemoScreens.Demo, out _demoScreen))
+                throw new InvalidOperationException("The demo scene needs a UIScreen with ID 'demo'.");
+
+            _demoScreen.OnOpened.AddListener(HideOpenButton);
+            _demoScreen.OnClosed.AddListener(ShowOpenButton);
+            _openDemoScreenButton.onClick.AddListener(OpenDemoScreen);
         }
+
+        private void OnDestroy()
+        {
+            if (_demoScreen != null)
+            {
+                _demoScreen.OnOpened.RemoveListener(HideOpenButton);
+                _demoScreen.OnClosed.RemoveListener(ShowOpenButton);
+            }
+
+            if (_openDemoScreenButton != null) _openDemoScreenButton.onClick.RemoveListener(OpenDemoScreen);
+        }
+
+        private void OpenDemoScreen() => Navigator.Open(DemoScreens.Demo);
+        private void HideOpenButton() => _openDemoScreenButton.gameObject.SetActive(false);
+        private void ShowOpenButton() => _openDemoScreenButton.gameObject.SetActive(true);
     }
 }

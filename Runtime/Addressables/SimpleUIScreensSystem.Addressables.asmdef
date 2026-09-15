@@ -1,0 +1,4 @@
+{
+  "name": "SimpleUIScreensSystem.Addressables",
+  "references": ["SimpleUIScreensSystem", "Unity.Addressables", "Unity.ResourceManager"]
+}

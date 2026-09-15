@@ -1,0 +1,8 @@
+{
+    "name": "SimpleUIScreensSystem.Editor",
+    "references": [
+        "SimpleUIScreensSystem",
+        "SimpleUIScreensSystem.Addressables"
+    ],
+    "includePlatforms": ["Editor"]
+}

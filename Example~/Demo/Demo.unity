@@ -1145,7 +1145,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf629f8c7f77149b581b1cc2d0ae2865, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _type: 1
+  _id: demo
   _closeButton:
   - {fileID: 1287354397}
   _modalWindow: {fileID: 288082492}

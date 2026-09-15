@@ -17,7 +17,11 @@ namespace SimpleUIScreensSystem
 
             _instance = new UIInitializer();
             var navigator = UINavigator.Instance;
+#if UNITY_6000_5_OR_NEWER
+            var screens = Object.FindObjectsByType<UIScreen>(FindObjectsInactive.Include);
+#else
             var screens = Object.FindObjectsByType<UIScreen>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#endif
 
             foreach (var screen in screens)
             {

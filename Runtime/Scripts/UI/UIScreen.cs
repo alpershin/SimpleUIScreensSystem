@@ -9,9 +9,10 @@ using UnityEngine.UI;
 namespace SimpleUIScreensSystem
 {
     [RequireComponent(typeof(CanvasGroup))]
-    public abstract class UIScreen : MonoBehaviour
+    public class UIScreen : MonoBehaviour
     {
-        [SerializeField] private EScreenType _type;
+        [SerializeField, Tooltip("Stable key used by UINavigator for scene screens. Screens created by AddressableUIRoot are keyed by the catalog.")]
+        private string _id;
         [SerializeField] private Button[] _closeButton;
         [SerializeField] protected Transform _modalWindow;
         [SerializeField] private bool _withAnimation;
@@ -21,12 +22,13 @@ namespace SimpleUIScreensSystem
 
         private UIScreenOpenCloseAnimation _animation = new UIScreenOpenCloseAnimation();
 
-        public EScreenType Type => _type;
+        public ScreenId Id => ScreenId.FromSerialized(_id);
 
         public UnityEvent OnClosed => _onClosed;
         public UnityEvent OnOpened => _onOpened;
 
         public bool IsOpen => gameObject.activeSelf;
+        public bool IsClosing { get; private set; }
 
         protected virtual void Awake()
         {
@@ -45,7 +47,17 @@ namespace SimpleUIScreensSystem
 
         private void OnDisable()
         {
+            IsClosing = false;
+            _animation.Dispose();
             _onClosed?.Invoke();
+        }
+
+        protected virtual void OnDestroy()
+        {
+            _animation.Dispose();
+            if (_closeButton == null) return;
+            foreach (var button in _closeButton)
+                if (button != null) button.onClick.RemoveListener(Close);
         }
 
         public virtual void Init()
@@ -55,6 +67,7 @@ namespace SimpleUIScreensSystem
 
         public virtual void Open()
         {
+            IsClosing = false;
             if (_animation == null || !_withAnimation)
             {
                 gameObject.SetActive(true);
@@ -62,17 +75,22 @@ namespace SimpleUIScreensSystem
             }
 
             gameObject.SetActive(true);
+            // An OnOpened listener may immediately request closing or deactivate this object.
+            if (IsClosing || !gameObject.activeInHierarchy) return;
             _animation.FadeIn();
         }
 
         public virtual void Close()
         {
-            if (_animation == null || !_withAnimation)
+            if (!gameObject.activeSelf) return;
+            // Skip the fade when it could not be seen; OnDisable resets IsClosing only if it runs.
+            if (_animation == null || !_withAnimation || !gameObject.activeInHierarchy)
             {
                 gameObject.SetActive(false);
                 return;
             }
 
+            IsClosing = true;
             _animation.FadeOut(() => gameObject.SetActive(false));
         }
     }

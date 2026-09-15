@@ -1,0 +1,5 @@
+{
+  "name": "SimpleUIScreensSystem.PlayModeTests",
+  "references": ["SimpleUIScreensSystem"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

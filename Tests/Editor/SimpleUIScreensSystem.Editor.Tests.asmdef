@@ -1,0 +1,12 @@
+{
+    "name": "SimpleUIScreensSystem.Editor.Tests",
+    "references": [
+        "SimpleUIScreensSystem"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

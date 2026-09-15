@@ -1,0 +1,10 @@
+{
+  "name": "SimpleUIScreensSystem.Addressables.PlayModeTests",
+  "references": [
+    "SimpleUIScreensSystem",
+    "SimpleUIScreensSystem.Addressables",
+    "Unity.Addressables",
+    "Unity.ResourceManager"
+  ],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

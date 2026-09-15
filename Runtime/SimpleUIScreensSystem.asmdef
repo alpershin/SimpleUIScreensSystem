@@ -1,3 +1,4 @@
 {
-	"name": "SimpleUIScreensSystem"
+	"name": "SimpleUIScreensSystem",
+	"references": ["UnityEngine.UI"]
 }

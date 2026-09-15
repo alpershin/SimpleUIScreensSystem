@@ -11,7 +11,7 @@ namespace SimpleUIScreensSystem
     {
         private static Coroutines _runner;
 
-        public static Coroutines Runner => _runner ??= CreateRunner();
+        public static Coroutines Runner => _runner != null ? _runner : CreateRunner();
 
         public static void Run(IEnumerator coroutine)
         {

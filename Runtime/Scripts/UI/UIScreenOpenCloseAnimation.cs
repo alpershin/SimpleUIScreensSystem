@@ -55,20 +55,21 @@ namespace SimpleUIScreensSystem
         private IEnumerator FadeAnimation(float from, float to, Action onFinish = null)
         {
             _screenGroup.alpha = from;
-            for (float i = 0f; i < 1f; i += Time.deltaTime / _screenFadeDuration)
+            for (float i = 0f; i < 1f; i += Time.unscaledDeltaTime / _screenFadeDuration)
             {
                 _screenGroup.alpha = Easing.easeInCubic(from, to, i);
                 yield return null;
             }
 
             _screenGroup.alpha = to;
+            _fadeCoroutine = null;
             onFinish?.Invoke();
         }
 
         private IEnumerator ScaleAnimation(float from, float to)
         {
             _modal.localScale = Vector3.one * from;
-            for (float i = 0f; i < 1f; i += Time.deltaTime / _screenWindowScaleDuration)
+            for (float i = 0f; i < 1f; i += Time.unscaledDeltaTime / _screenWindowScaleDuration)
             {
                 _modal.localScale = Vector3.one * Easing.easeInSine(from, to, i);
                 yield return null;
