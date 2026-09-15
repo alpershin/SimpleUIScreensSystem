@@ -6,9 +6,13 @@ using UnityEngine;
 
 namespace SimpleUIScreensSystem
 {
+    /// <summary>Registers every scene screen with <see cref="UINavigator"/> on startup and hides it.</summary>
     public class UIInitializer
     {
         private static UIInitializer _instance;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => _instance = null;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void Initialize()
@@ -22,12 +26,11 @@ namespace SimpleUIScreensSystem
 #else
             var screens = Object.FindObjectsByType<UIScreen>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 #endif
-
             foreach (var screen in screens)
             {
                 screen.Init();
                 navigator.Add(screen);
-                screen.Close();
+                screen.Hide();
             }
         }
     }

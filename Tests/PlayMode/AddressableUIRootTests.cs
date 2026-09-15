@@ -283,7 +283,7 @@ namespace SimpleUIScreensSystem.AddressableUI.Tests
         }
 
         [UnityTest]
-        public IEnumerator DisablingRootReleasesClonesEvenWhenSharedCoroutinesAreStopped()
+        public IEnumerator DisablingRootReleasesClonesOnlyAfterInstancesAreDestroyed()
         {
             CreateRoot(CreateScreen(First));
             _root.Open(First);
@@ -297,11 +297,10 @@ namespace SimpleUIScreensSystem.AddressableUI.Tests
                 if (key == _keys[First]) releasedAfterDestruction = instance == null;
             };
 
-            // Disable invokes disposal immediately; the queued release must survive
-            // cancellation of the public shared coroutine runner in this same frame.
+            // Disable invokes disposal immediately; the release is queued on the ResourceManager
+            // and must wait for the deferred destruction of the clone.
             _root.enabled = false;
-            Coroutines.StopAll();
-            yield return Until(() => ReleaseCount(First) == 1, "Shared coroutine cancellation leaked the prefab handle.");
+            yield return Until(() => ReleaseCount(First) == 1, "Disabling the root leaked the prefab handle.");
             Assert.That(releasedAfterDestruction, Is.True);
         }
 

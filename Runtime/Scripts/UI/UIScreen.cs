@@ -8,6 +8,10 @@ using UnityEngine.UI;
 
 namespace SimpleUIScreensSystem
 {
+    /// <summary>
+    /// A screen built by hand in uGUI. Transitions run on this component, and the state follows the
+    /// GameObject's active flag, so activating or deactivating the object from outside stays consistent.
+    /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public class UIScreen : MonoBehaviour
     {
@@ -17,39 +21,58 @@ namespace SimpleUIScreensSystem
         [SerializeField] protected Transform _modalWindow;
         [SerializeField] private bool _withAnimation;
 
-        private UnityEvent _onClosed = new UnityEvent();
-        private UnityEvent _onOpened = new UnityEvent();
-
-        private UIScreenOpenCloseAnimation _animation = new UIScreenOpenCloseAnimation();
+        private readonly UnityEvent _onOpening = new UnityEvent();
+        private readonly UnityEvent _onOpened = new UnityEvent();
+        private readonly UnityEvent _onClosing = new UnityEvent();
+        private readonly UnityEvent _onClosed = new UnityEvent();
+        private readonly UIScreenOpenCloseAnimation _animation = new UIScreenOpenCloseAnimation();
+        private bool _initialized;
+        private bool _openRequested;
 
         public ScreenId Id => ScreenId.FromSerialized(_id);
+        public ScreenState State { get; private set; }
 
-        public UnityEvent OnClosed => _onClosed;
+        /// <summary>The screen just became active; its opening transition may still run.</summary>
+        public UnityEvent OnOpening => _onOpening;
+        /// <summary>The opening transition has finished and the screen is fully visible.</summary>
         public UnityEvent OnOpened => _onOpened;
+        /// <summary>Closing was requested; the closing transition may still run.</summary>
+        public UnityEvent OnClosing => _onClosing;
+        /// <summary>The screen is inactive again. Also raised when the object is deactivated from outside.</summary>
+        public UnityEvent OnClosed => _onClosed;
 
-        public bool IsOpen => gameObject.activeSelf;
-        public bool IsClosing { get; private set; }
+        public bool IsOpen => State != ScreenState.Hidden;
+        public bool IsClosing => State == ScreenState.Closing;
+
+        private bool CanAnimate => _withAnimation && _animation.IsReady && gameObject.activeInHierarchy;
 
         protected virtual void Awake()
         {
-            if (_closeButton is not { Length: > 0 }) return;
-
+            if (!_initialized) Init();
+            if (_closeButton == null) return;
             foreach (var button in _closeButton)
-            {
-                button.onClick.AddListener(Close);
-            }
+                if (button != null) button.onClick.AddListener(Close);
         }
 
         private void OnEnable()
         {
-            _onOpened?.Invoke();
+            // Open() drives its own transition. Any other activation is an instant open.
+            if (_openRequested || State != ScreenState.Hidden) return;
+            BeginOpening(false);
         }
 
         private void OnDisable()
         {
-            IsClosing = false;
             _animation.Dispose();
-            _onClosed?.Invoke();
+            if (State == ScreenState.Hidden) return;
+            if (State != ScreenState.Closing)
+            {
+                State = ScreenState.Closing;
+                _onClosing.Invoke();
+            }
+
+            State = ScreenState.Hidden;
+            _onClosed.Invoke();
         }
 
         protected virtual void OnDestroy()
@@ -60,38 +83,85 @@ namespace SimpleUIScreensSystem
                 if (button != null) button.onClick.RemoveListener(Close);
         }
 
+        /// <summary>Binds the transition to this screen. Runs once; Awake calls it if nobody did earlier.</summary>
         public virtual void Init()
         {
-            _animation.Init(GetComponent<CanvasGroup>(), _modalWindow, Coroutines.Runner);
+            if (_initialized) return;
+            _initialized = true;
+            _animation.Init(GetComponent<CanvasGroup>(), _modalWindow, this);
         }
 
         public virtual void Open()
         {
-            IsClosing = false;
-            if (_animation == null || !_withAnimation)
+            switch (State)
             {
-                gameObject.SetActive(true);
-                return;
+                case ScreenState.Opening:
+                case ScreenState.Open:
+                    return;
+                case ScreenState.Closing:
+                    // Reverse the running transition from its current values.
+                    BeginOpening(CanAnimate);
+                    return;
             }
 
+            _openRequested = true;
             gameObject.SetActive(true);
-            // An OnOpened listener may immediately request closing or deactivate this object.
-            if (IsClosing || !gameObject.activeInHierarchy) return;
-            _animation.FadeIn();
+            _openRequested = false;
+            if (!gameObject.activeSelf) return;
+
+            var animated = CanAnimate;
+            if (animated) _animation.SetHidden();
+            BeginOpening(animated);
         }
 
-        public virtual void Close()
+        public virtual void Close() => CloseWith(CanAnimate);
+
+        /// <summary>Deactivates immediately, skipping or cutting short the closing transition.</summary>
+        public void Hide() => CloseWith(false);
+
+        private void BeginOpening(bool animated)
         {
-            if (!gameObject.activeSelf) return;
-            // Skip the fade when it could not be seen; OnDisable resets IsClosing only if it runs.
-            if (_animation == null || !_withAnimation || !gameObject.activeInHierarchy)
+            State = ScreenState.Opening;
+            _onOpening.Invoke();
+            // A listener may have closed or deactivated the screen already.
+            if (State != ScreenState.Opening) return;
+            if (animated)
             {
-                gameObject.SetActive(false);
+                _animation.FadeIn(CompleteOpening);
                 return;
             }
 
-            IsClosing = true;
-            _animation.FadeOut(() => gameObject.SetActive(false));
+            _animation.SetVisible();
+            CompleteOpening();
         }
+
+        private void CompleteOpening()
+        {
+            if (State != ScreenState.Opening) return;
+            State = ScreenState.Open;
+            _onOpened.Invoke();
+        }
+
+        private void CloseWith(bool animated)
+        {
+            switch (State)
+            {
+                case ScreenState.Closing:
+                    if (!animated) Deactivate();
+                    return;
+                case ScreenState.Hidden:
+                    // Active in the scene but OnEnable has not run yet (startup ordering): hide silently.
+                    if (gameObject.activeSelf) Deactivate();
+                    return;
+            }
+
+            State = ScreenState.Closing;
+            _onClosing.Invoke();
+            if (State != ScreenState.Closing) return;
+            if (animated) _animation.FadeOut(Deactivate);
+            else Deactivate();
+        }
+
+        private void Deactivate() => gameObject.SetActive(false);
     }
 }

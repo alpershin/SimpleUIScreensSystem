@@ -23,6 +23,9 @@ namespace SimpleUIScreensSystem
 
         public static UINavigator Instance => _instance ??= new UINavigator();
 
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => _instance = null;
+
         public int OpenedScreensCount => _openedScreens.Count;
 
         /// <summary>Registers a screen under its inspector ID. Registering the same screen twice is a no-op.</summary>

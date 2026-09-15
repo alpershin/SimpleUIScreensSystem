@@ -8,91 +8,76 @@ using UnityEngine;
 
 namespace SimpleUIScreensSystem
 {
+    /// <summary>Fades a CanvasGroup and scales an optional modal window on the screen's own coroutine.</summary>
     public class UIScreenOpenCloseAnimation : IDisposable
     {
-        private MonoBehaviour _monoBehaviour;
-        private Coroutine _fadeCoroutine;
-        private Coroutine _scaleCoroutine;
+        private const float FadeDuration = 0.1f;
+        private const float ModalHiddenScale = 0.1f;
 
+        private MonoBehaviour _host;
+        private Coroutine _routine;
         private CanvasGroup _screenGroup;
         private Transform _modal;
 
-        private float _screenFadeDuration => 0.1f;
-        private float _screenWindowScaleDuration => 0.1f;
-        private float _screenWindowScaleTarget => 1f;
-        private float _screenWindowScaleStart => 0.1f;
+        public bool IsReady => _screenGroup != null && _host != null;
+        public bool IsRunning => _routine != null;
 
-        public void Init(CanvasGroup screen, Transform modalWindow = null, MonoBehaviour monoBehaviour = null)
+        public void Init(CanvasGroup screen, Transform modalWindow = null, MonoBehaviour host = null)
         {
             _screenGroup = screen;
             _modal = modalWindow;
-            _monoBehaviour = monoBehaviour;
+            _host = host;
         }
 
-        public void FadeIn(Action onFinish = null)
+        public void SetHidden() => Apply(0f, ModalHiddenScale);
+        public void SetVisible() => Apply(1f, 1f);
+
+        public void FadeIn(Action onFinish = null) => Play(1f, 1f, onFinish);
+        public void FadeOut(Action onFinish = null) => Play(0f, ModalHiddenScale, onFinish);
+
+        /// <summary>Stops a running transition where it is. Its onFinish callback is not invoked.</summary>
+        public void Dispose()
         {
-            Show(0f, 1f, _screenWindowScaleStart, _screenWindowScaleTarget, onFinish);
+            if (_routine == null) return;
+            if (_host != null) _host.StopCoroutine(_routine);
+            _routine = null;
         }
 
-        public void FadeOut(Action onFinish = null)
+        private void Play(float alphaTo, float scaleTo, Action onFinish)
         {
-            Show(1f, 0f, _screenWindowScaleTarget, _screenWindowScaleStart, onFinish);
-        }
-
-        private void Show(float screenAlphaFrom, float screenAlphaTo, float modalWindowFrom, float modalWindowTo, Action onFinish = null)
-        {
-            if (_screenGroup == null || _monoBehaviour == null) return;
-
             Dispose();
+            if (!IsReady || !_host.gameObject.activeInHierarchy)
+            {
+                Apply(alphaTo, scaleTo);
+                onFinish?.Invoke();
+                return;
+            }
 
-            _fadeCoroutine = _monoBehaviour.StartCoroutine(FadeAnimation(screenAlphaFrom, screenAlphaTo, onFinish));
-
-            if (_modal == null) return;
-
-            _scaleCoroutine = _monoBehaviour.StartCoroutine(ScaleAnimation(modalWindowFrom, modalWindowTo));
+            _routine = _host.StartCoroutine(Animate(alphaTo, scaleTo, onFinish));
         }
 
-        private IEnumerator FadeAnimation(float from, float to, Action onFinish = null)
+        private IEnumerator Animate(float alphaTo, float scaleTo, Action onFinish)
         {
-            _screenGroup.alpha = from;
-            for (float i = 0f; i < 1f; i += Time.unscaledDeltaTime / _screenFadeDuration)
+            var alphaFrom = _screenGroup.alpha;
+            var scaleFrom = _modal != null ? _modal.localScale.x : scaleTo;
+            // The remaining distance sets the duration, so an interrupted transition reverses from where it is.
+            var duration = FadeDuration * Mathf.Abs(alphaTo - alphaFrom);
+            for (var t = 0f; duration > 0f && t < 1f; t += Time.unscaledDeltaTime / duration)
             {
-                _screenGroup.alpha = Easing.easeInCubic(from, to, i);
+                _screenGroup.alpha = Easing.easeInCubic(alphaFrom, alphaTo, t);
+                if (_modal != null) _modal.localScale = Vector3.one * Easing.easeInSine(scaleFrom, scaleTo, t);
                 yield return null;
             }
 
-            _screenGroup.alpha = to;
-            _fadeCoroutine = null;
+            Apply(alphaTo, scaleTo);
+            _routine = null;
             onFinish?.Invoke();
         }
 
-        private IEnumerator ScaleAnimation(float from, float to)
+        private void Apply(float alpha, float scale)
         {
-            _modal.localScale = Vector3.one * from;
-            for (float i = 0f; i < 1f; i += Time.unscaledDeltaTime / _screenWindowScaleDuration)
-            {
-                _modal.localScale = Vector3.one * Easing.easeInSine(from, to, i);
-                yield return null;
-            }
-
-            _modal.localScale = Vector3.one * to;
-        }
-
-        public void Dispose()
-        {
-            if (_monoBehaviour == null) return;
-
-            if (_fadeCoroutine != null)
-            {
-                _monoBehaviour.StopCoroutine(_fadeCoroutine);
-                _fadeCoroutine = null;
-            }
-
-            if (_scaleCoroutine != null)
-            {
-                _monoBehaviour.StopCoroutine(_scaleCoroutine);
-                _scaleCoroutine = null;
-            }
+            if (_screenGroup != null) _screenGroup.alpha = alpha;
+            if (_modal != null) _modal.localScale = Vector3.one * scale;
         }
     }
 }
