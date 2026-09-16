@@ -6,6 +6,7 @@ A lightweight screen manager for hand-built uGUI interfaces in Unity. Screens ar
 
 ## Features
 
+- **One entry point** — `UIRoot` routes every request by key, so calling code does not care whether a screen sits in the scene or is loaded on demand.
 - **Scene screens** — register screens placed in a scene and open them by a typed key.
 - **Addressable screens** — load screen prefabs on demand, keep a bounded cache, and prefetch the screens the player is most likely to open next.
 - **Typed keys** — `ScreenId` replaces enums; a `Screens` class is generated from the catalog, so adding a screen never requires editing the package.
@@ -51,6 +52,20 @@ UINavigator.Instance.Close(Screens.Settings);
 
 `UIInitializer` finds every `UIScreen` on startup, registers it under its ID, and hides it.
 
+## One entry point for every screen
+
+`UIRoot` is the component your game talks to. It holds an ordered list of screen sources and sends each request to the first one that owns the key:
+
+```csharp
+[SerializeField] private UIRoot _ui;
+
+_ui.Open(Screens.Settings);   // a scene screen or an Addressable one, same call
+_ui.Close(Screens.Settings);
+_ui.CloseAll();
+```
+
+Add `UIRoot` to an active object, drag any `IScreenSource` components (such as `AddressableUIRoot`) into its **Sources** list, and leave **Include Scene Screens** on so keys registered with `UINavigator` are served too. Sources can also be registered from code with `AddSource`. Implement `IScreenSource` yourself to add a source of your own, for example screens loaded from an asset bundle or built at runtime.
+
 ## Addressable screens with predictive loading
 
 `AddressableUIRoot` loads screen prefabs on demand and prefetches likely next screens in the background. Ranking combines a designer priority, decaying open frequency, learned screen-to-screen transitions, and recent user actions reported through `ReportAction()`. User requests always get a reserved load slot; the cache is bounded by screen count and an estimated memory budget.
@@ -94,6 +109,16 @@ Registry for scene screens, available as `UINavigator.Instance` or as a standalo
 - `Open(ScreenId, Action closeCallback = null)` — the callback fires once when that opening closes.
 - `Close(ScreenId)`, `CloseAll()`
 - `TryGetScreen(ScreenId, out UIScreen)`
+
+### `UIRoot`
+Routing facade over one or more `IScreenSource` implementations.
+
+- `Open(ScreenId)`, `Close(ScreenId)`, `CloseAll()`
+- `Contains(ScreenId)`, `TryGetScreen(ScreenId, out UIScreen)`, `TryResolve(ScreenId, out IScreenSource)`
+- `AddSource(IScreenSource)` / `RemoveSource(IScreenSource)`, `Sources`
+- `ScreenOpened` — forwarded from every registered source while the root is enabled.
+
+Keys no source owns raise an `ArgumentException`, so a typo in configuration fails loudly instead of silently doing nothing.
 
 ### `AddressableUIRoot`
 Scene-owned cache for Addressable screens.

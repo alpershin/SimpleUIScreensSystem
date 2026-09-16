@@ -9,7 +9,7 @@ Goal: a package for building uGUI interfaces by hand in scenes and prefabs, with
 - [ ] Translate `Documentation~/addressable-screen-cache.md` to English
 - [ ] Tags `v1.0.2` and `v2.0.0`
 - [ ] Verify on the declared minimum: Unity 6000.0 with Addressables 2.7.6
-- [ ] CI: EditMode and PlayMode tests on the minimum Unity version (needs a small test project in the repository or a generated one)
+- [x] CI: EditMode and PlayMode tests on the minimum Unity version (`.github/workflows/tests.yml`; needs the licence secrets described in `.github/workflows/README.md`)
 
 ## Stage 2 — Screen lifecycle
 
@@ -23,7 +23,7 @@ Goal: a package for building uGUI interfaces by hand in scenes and prefabs, with
 
 ## Stage 3 — Navigation
 
-- [ ] One facade over scene screens and Addressable screens, keyed by `ScreenId`
+- [x] One facade over scene screens and Addressable screens, keyed by `ScreenId` (`UIRoot` + `IScreenSource`)
 - [ ] History for main screens: open, replace, back
 - [ ] Modal stack; input blocked under the top modal; focus returns to the previous screen
 - [ ] Layers: main, modal, notifications, HUD, with sorting rules

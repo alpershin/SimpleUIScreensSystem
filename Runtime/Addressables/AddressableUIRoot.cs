@@ -8,7 +8,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 namespace SimpleUIScreensSystem.AddressableUI
 {
     /// <summary>Scene-owned Addressables cache. All API calls must run on Unity's main thread.</summary>
-    public sealed class AddressableUIRoot : MonoBehaviour
+    public sealed class AddressableUIRoot : MonoBehaviour, IScreenSource
     {
         private enum LoadState { Unloaded, Loading, Ready }
 
@@ -108,6 +108,24 @@ namespace SimpleUIScreensSystem.AddressableUI
             entry.Requested = true;
             entry.DiscardOnCompletion = false;
             entry.RequestOrder = ++_requestOrder;
+        }
+
+        /// <summary>True when the catalog holds this key and the root has been enabled with it.</summary>
+        public bool Contains(ScreenId screenId) => screenId.IsValid && _byId.ContainsKey(screenId);
+
+        /// <summary>
+        /// Closes every open screen and cancels every queued open. Loaded assets stay cached.
+        /// Does nothing while the root is disabled, so a shared UIRoot can close everything safely.
+        /// </summary>
+        public void CloseAll()
+        {
+            if (!_initialized) return;
+            _lastActionAt = Now;
+            foreach (var entry in _entries)
+            {
+                entry.Requested = false;
+                if (entry.Instance != null) entry.Instance.Close();
+            }
         }
 
         /// <summary>Also cancels a queued/pending open. Shared Addressables I/O is not forcibly cancelled.</summary>

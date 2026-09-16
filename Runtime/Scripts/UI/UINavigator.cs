@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Events;
 
 #endregion
@@ -9,24 +10,41 @@ using UnityEngine.Events;
 namespace SimpleUIScreensSystem
 {
     /// <summary>
-    /// Registry of scene-placed screens addressed by <see cref="ScreenId"/>.
-    /// Screens loaded through Addressables are owned by AddressableUIRoot instead.
+    /// Registry of screens placed in a scene, addressed by <see cref="ScreenId"/>.
+    /// Screens loaded on demand are owned by their own <see cref="IScreenSource"/> instead.
     /// </summary>
-    public sealed class UINavigator
+    public sealed class UINavigator : IScreenSource
     {
+        private sealed class Registration
+        {
+            public UnityAction Opening;
+            public UnityAction Closed;
+            public Action CloseCallback;
+        }
+
         private static UINavigator _instance;
 
         private readonly Dictionary<ScreenId, UIScreen> _screens = new Dictionary<ScreenId, UIScreen>();
-        private readonly Dictionary<UIScreen, UnityAction> _closedListeners = new Dictionary<UIScreen, UnityAction>();
-        private readonly Dictionary<UIScreen, Action> _closeCallbacks = new Dictionary<UIScreen, Action>();
-        private readonly List<UIScreen> _openedScreens = new List<UIScreen>();
+        private readonly Dictionary<UIScreen, Registration> _registrations = new Dictionary<UIScreen, Registration>();
 
         public static UINavigator Instance => _instance ??= new UINavigator();
 
-        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics() => _instance = null;
 
-        public int OpenedScreensCount => _openedScreens.Count;
+        /// <summary>Raised once a registered screen becomes active; its opening transition may still run.</summary>
+        public event Action<ScreenId, UIScreen> ScreenOpened;
+
+        public int OpenedScreensCount
+        {
+            get
+            {
+                var count = 0;
+                foreach (var pair in _registrations)
+                    if (pair.Key != null && pair.Key.IsOpen) count++;
+                return count;
+            }
+        }
 
         /// <summary>Registers a screen under its inspector ID. Registering the same screen twice is a no-op.</summary>
         public void Add(UIScreen screen)
@@ -37,53 +55,59 @@ namespace SimpleUIScreensSystem
             if (_screens.TryGetValue(screen.Id, out var registered))
             {
                 if (registered == screen) return;
-                throw new InvalidOperationException(
-                    $"Screen ID '{screen.Id}' is already registered by '{registered.name}'.");
+                if (registered != null)
+                    throw new InvalidOperationException(
+                        $"Screen ID '{screen.Id}' is already registered by '{registered.name}'.");
+                Remove(registered);
             }
 
+            var registration = new Registration
+            {
+                Opening = () => OnScreenOpening(screen),
+                Closed = () => OnScreenClosed(screen)
+            };
             _screens.Add(screen.Id, screen);
-            UnityAction listener = () => OnScreenClosed(screen);
-            _closedListeners.Add(screen, listener);
-            screen.OnClosed.AddListener(listener);
+            _registrations.Add(screen, registration);
+            screen.OnOpening.AddListener(registration.Opening);
+            screen.OnClosed.AddListener(registration.Closed);
         }
 
         /// <summary>Forgets a screen and drops its subscriptions. Call before destroying a registered screen.</summary>
         public void Remove(UIScreen screen)
         {
             // A destroyed screen compares equal to null but must still be dropped from every map.
-            if (ReferenceEquals(screen, null) || !_closedListeners.TryGetValue(screen, out var listener)) return;
-            _closedListeners.Remove(screen);
-            screen.OnClosed.RemoveListener(listener);
+            if (ReferenceEquals(screen, null) || !_registrations.TryGetValue(screen, out var registration)) return;
+            _registrations.Remove(screen);
+            screen.OnOpening.RemoveListener(registration.Opening);
+            screen.OnClosed.RemoveListener(registration.Closed);
             _screens.Remove(screen.Id);
-            _openedScreens.Remove(screen);
-            _closeCallbacks.Remove(screen);
         }
 
         /// <summary>Opens a registered screen. The callback fires once, when this opening is closed.</summary>
         public void Open(ScreenId screenId, Action closeCallback = null)
         {
             var screen = GetScreen(screenId);
-            var isOpen = _openedScreens.Contains(screen);
-            if (isOpen && !screen.IsClosing) return;
-
-            if (!isOpen) _openedScreens.Add(screen);
-            if (closeCallback != null) _closeCallbacks[screen] = closeCallback;
+            if (screen.IsOpen && !screen.IsClosing) return;
+            if (closeCallback != null) _registrations[screen].CloseCallback = closeCallback;
             screen.Open();
         }
 
         public void Close(ScreenId screenId)
         {
             var screen = GetScreen(screenId);
-            if (_openedScreens.Contains(screen)) screen.Close();
+            if (screen.IsOpen) screen.Close();
         }
 
-        /// <summary>Closes every open screen. Animated screens leave the open list when their close finishes.</summary>
         public void CloseAll()
         {
             // A close callback may open or close other screens, so iterate over a snapshot.
-            foreach (var screen in _openedScreens.ToArray())
-                if (screen != null && _openedScreens.Contains(screen)) screen.Close();
+            var snapshot = new UIScreen[_registrations.Count];
+            _registrations.Keys.CopyTo(snapshot, 0);
+            foreach (var screen in snapshot)
+                if (screen != null && screen.IsOpen) screen.Close();
         }
+
+        public bool Contains(ScreenId screenId) => TryGetScreen(screenId, out _);
 
         public bool TryGetScreen(ScreenId screenId, out UIScreen screen)
         {
@@ -100,6 +124,8 @@ namespace SimpleUIScreensSystem
             return true;
         }
 
+        void IScreenSource.Open(ScreenId screenId) => Open(screenId);
+
         private UIScreen GetScreen(ScreenId screenId)
         {
             if (!TryGetScreen(screenId, out var screen))
@@ -107,12 +133,14 @@ namespace SimpleUIScreensSystem
             return screen;
         }
 
+        private void OnScreenOpening(UIScreen screen) => ScreenOpened?.Invoke(screen.Id, screen);
+
         private void OnScreenClosed(UIScreen screen)
         {
-            _openedScreens.Remove(screen);
-            if (!_closeCallbacks.TryGetValue(screen, out var callback)) return;
-            _closeCallbacks.Remove(screen);
-            callback();
+            if (!_registrations.TryGetValue(screen, out var registration)) return;
+            var callback = registration.CloseCallback;
+            registration.CloseCallback = null;
+            callback?.Invoke();
         }
     }
 }
