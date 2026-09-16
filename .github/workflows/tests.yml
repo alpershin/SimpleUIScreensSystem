@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # The minimum version the package declares. Pick a tag that exists as a
+  # game-ci editor image: https://game.ci/docs/docker/versions
+  UNITY_VERSION: 6000.0.58f2
+  PACKAGE_NAME: com.alpershin.simpleuiscreenssystem
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: EditMode and PlayMode
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the package
+        uses: actions/checkout@v4
+        with:
+          path: package
+
+      - name: Create the host project
+        run: |
+          set -eux
+          mkdir -p project/Assets project/Packages project/ProjectSettings
+          mv package "project/Packages/${PACKAGE_NAME}"
+          echo "m_EditorVersion: ${UNITY_VERSION}" > project/ProjectSettings/ProjectVersion.txt
+          cat > project/Packages/manifest.json <<JSON
+          {
+            "dependencies": {
+              "com.unity.addressables": "2.7.6",
+              "com.unity.ugui": "2.0.0",
+              "com.unity.test-framework": "1.4.5"
+            },
+            "testables": ["${PACKAGE_NAME}"]
+          }
+          JSON
+
+      - name: Cache the Library folder
+        uses: actions/cache@v4
+        with:
+          path: project/Library
+          key: Library-${{ env.UNITY_VERSION }}-${{ hashFiles('project/Packages/manifest.json') }}
+          restore-keys: |
+            Library-${{ env.UNITY_VERSION }}-
+
+      - name: Run the tests
+        uses: game-ci/unity-test-runner@v4
+        id: tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: project
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: all
+          artifactsPath: test-results
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Test results
+
+      - name: Upload the results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ${{ steps.tests.outputs.artifactsPath }}
