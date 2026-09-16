@@ -11,6 +11,9 @@ env:
   # game-ci editor image: https://game.ci/docs/docker/versions
   UNITY_VERSION: 6000.0.58f2
   PACKAGE_NAME: com.alpershin.simpleuiscreenssystem
+  # The host project stays next to the checkout, never on top of it: the
+  # game-ci CLI runs git commands in the workspace root.
+  PROJECT_PATH: host
 
 concurrency:
   group: tests-${{ github.ref }}
@@ -23,16 +26,15 @@ jobs:
     steps:
       - name: Check out the package
         uses: actions/checkout@v4
-        with:
-          path: package
 
       - name: Create the host project
         run: |
           set -eux
-          mkdir -p project/Assets project/Packages project/ProjectSettings
-          mv package "project/Packages/${PACKAGE_NAME}"
-          echo "m_EditorVersion: ${UNITY_VERSION}" > project/ProjectSettings/ProjectVersion.txt
-          cat > project/Packages/manifest.json <<JSON
+          mkdir -p "${PROJECT_PATH}/Assets" "${PROJECT_PATH}/ProjectSettings" \
+                   "${PROJECT_PATH}/Packages/${PACKAGE_NAME}"
+          git archive HEAD | tar -x -C "${PROJECT_PATH}/Packages/${PACKAGE_NAME}"
+          echo "m_EditorVersion: ${UNITY_VERSION}" > "${PROJECT_PATH}/ProjectSettings/ProjectVersion.txt"
+          cat > "${PROJECT_PATH}/Packages/manifest.json" <<JSON
           {
             "dependencies": {
               "com.unity.addressables": "2.7.6",
@@ -46,8 +48,8 @@ jobs:
       - name: Cache the Library folder
         uses: actions/cache@v4
         with:
-          path: project/Library
-          key: Library-${{ env.UNITY_VERSION }}-${{ hashFiles('project/Packages/manifest.json') }}
+          path: ${{ env.PROJECT_PATH }}/Library
+          key: Library-${{ env.UNITY_VERSION }}-${{ hashFiles('package.json') }}
           restore-keys: |
             Library-${{ env.UNITY_VERSION }}-
 
@@ -59,9 +61,10 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          projectPath: project
+          projectPath: ${{ env.PROJECT_PATH }}
           unityVersion: ${{ env.UNITY_VERSION }}
           testMode: all
+          coverageEnabled: false
           artifactsPath: test-results
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test results

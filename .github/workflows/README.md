@@ -2,8 +2,10 @@
 
 `tests.yml` runs the EditMode and PlayMode suites on every push to `main` and on
 pull requests. The package has no Unity project of its own, so the workflow
-builds a throwaway host project, drops the checkout into its `Packages` folder,
-and lists the package under `testables` so its tests are discovered.
+builds a throwaway host project in `host/`, exports the checked-out commit into
+its `Packages` folder, and lists the package under `testables` so its tests are
+discovered. The checkout itself stays in the workspace root because the game-ci
+CLI runs git commands there.
 
 ## Required secrets
 
