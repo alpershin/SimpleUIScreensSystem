@@ -19,7 +19,7 @@ Goal: a package for building uGUI interfaces by hand in scenes and prefabs, with
 - [x] Transitions run on the screen itself; the shared `Coroutines` runner is obsolete
 - [x] `Hide()` for instant deactivation; startup hiding does not animate
 - [x] Static state (`UINavigator`, `UIInitializer`) resets for Enter Play Mode without domain reload
-- [ ] Transition profile asset (durations, curves, reduce-motion) instead of constants
+- [x] Transition profile asset (durations, curves) and a global reduce-motion switch
 
 ## Stage 3 — Navigation
 

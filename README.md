@@ -9,7 +9,7 @@ A lightweight screen manager for hand-built uGUI interfaces in Unity. Screens ar
 - **Scene screens** — register screens placed in a scene and open them by a typed key.
 - **Addressable screens** — load screen prefabs on demand, keep a bounded cache, and prefetch the screens the player is most likely to open next.
 - **Typed keys** — `ScreenId` replaces enums; a `Screens` class is generated from the catalog, so adding a screen never requires editing the package.
-- **Transitions** — fade and modal scale animations driven by unscaled time, so menus animate while the game is paused.
+- **Transitions** — fade and modal scale animations driven by unscaled time, so menus animate while the game is paused. Timing and curves come from a reusable `ScreenTransitionProfile` asset; `UIMotion.ReduceMotion` turns animation off globally.
 - **Inspector bindings** — hook buttons to open or close a screen without writing code.
 - **Tests** — EditMode and PlayMode test suites cover keys, ranking, code generation, loading, and navigation.
 
@@ -34,7 +34,7 @@ A lightweight screen manager for hand-built uGUI interfaces in Unity. Screens ar
 ## Quick start: screens in a scene
 
 1. Build a screen under a Canvas and add `UIScreen` to its root (a `CanvasGroup` is added automatically).
-2. Fill in the **ID** field, assign close buttons, an optional modal container, and enable the animation if you want it.
+2. Fill in the **ID** field, assign close buttons, an optional modal container, and enable the animation if you want it. To tune timing and curves, create **Create → Simple UI → Screen Transition Profile** and assign it to the **Transition** field; screens without a profile use built-in defaults.
 3. Declare the key in your project and open the screen through the navigator:
 
 ```csharp
@@ -102,6 +102,9 @@ Scene-owned cache for Addressable screens.
 - `ReportAction(string)` — feeds the popularity model with a stable action name.
 - `TryGetScreen(ScreenId, out UIScreen)`, `TrimCache()`
 - `ScreenOpened`, `LoadFailed` — events for activation and load errors.
+
+### `ScreenTransitionProfile` and `UIMotion`
+`ScreenTransitionProfile` is a ScriptableObject with the fade duration, fade curve, modal hidden scale, and scale curve. Assign one per screen or share it across screens. `UIMotion.ReduceMotion` is a process-wide switch that makes every screen open and close instantly; set it from your settings screen or from platform accessibility preferences.
 
 ### `ScreenId`
 Immutable value type with ordinal comparison. Keys are case-sensitive; `default(ScreenId)` is invalid and is rejected by both navigators.

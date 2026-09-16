@@ -20,6 +20,8 @@ namespace SimpleUIScreensSystem
         [SerializeField] private Button[] _closeButton;
         [SerializeField] protected Transform _modalWindow;
         [SerializeField] private bool _withAnimation;
+        [SerializeField, Tooltip("Optional. Timing and curves for the transition; the built-in default is used when empty.")]
+        private ScreenTransitionProfile _transition;
 
         private readonly UnityEvent _onOpening = new UnityEvent();
         private readonly UnityEvent _onOpened = new UnityEvent();
@@ -44,7 +46,8 @@ namespace SimpleUIScreensSystem
         public bool IsOpen => State != ScreenState.Hidden;
         public bool IsClosing => State == ScreenState.Closing;
 
-        private bool CanAnimate => _withAnimation && _animation.IsReady && gameObject.activeInHierarchy;
+        private bool CanAnimate =>
+            _withAnimation && !UIMotion.ReduceMotion && _animation.IsReady && gameObject.activeInHierarchy;
 
         protected virtual void Awake()
         {
@@ -89,6 +92,7 @@ namespace SimpleUIScreensSystem
             if (_initialized) return;
             _initialized = true;
             _animation.Init(GetComponent<CanvasGroup>(), _modalWindow, this);
+            _animation.Profile = _transition;
         }
 
         public virtual void Open()

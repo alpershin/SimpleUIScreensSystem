@@ -14,6 +14,10 @@ namespace SimpleUIScreensSystem.Tests
             typeof(UIScreen).GetField("_withAnimation", BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly FieldInfo ModalField =
             typeof(UIScreen).GetField("_modalWindow", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo ProfileField =
+            typeof(UIScreen).GetField("_transition", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo DurationField =
+            typeof(ScreenTransitionProfile).GetField("_fadeDuration", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private readonly List<GameObject> _objects = new List<GameObject>();
         private readonly List<string> _events = new List<string>();
@@ -23,15 +27,63 @@ namespace SimpleUIScreensSystem.Tests
         {
             Assert.That(AnimationFlag, Is.Not.Null, "UIScreen no longer serializes '_withAnimation'; update the test.");
             Assert.That(ModalField, Is.Not.Null, "UIScreen no longer serializes '_modalWindow'; update the test.");
+            Assert.That(ProfileField, Is.Not.Null, "UIScreen no longer serializes '_transition'; update the test.");
+            Assert.That(DurationField, Is.Not.Null, "ScreenTransitionProfile no longer serializes '_fadeDuration'; update the test.");
             _events.Clear();
+            UIMotion.ReduceMotion = false;
         }
 
         [TearDown]
         public void TearDown()
         {
+            UIMotion.ReduceMotion = false;
             foreach (var gameObject in _objects)
                 if (gameObject != null) Object.DestroyImmediate(gameObject);
             _objects.Clear();
+        }
+
+        [Test]
+        public void ReduceMotionMakesAnimatedScreensInstant()
+        {
+            UIMotion.ReduceMotion = true;
+            var screen = CreateScreen(animated: true);
+
+            screen.Open();
+            Assert.That(screen.State, Is.EqualTo(ScreenState.Open));
+            Assert.That(screen.GetComponent<CanvasGroup>().alpha, Is.EqualTo(1f));
+
+            screen.Close();
+            Assert.That(screen.State, Is.EqualTo(ScreenState.Hidden));
+            Assert.That(_events, Is.EqualTo(new[] { "Opening", "Opened", "Closing", "Closed" }));
+        }
+
+        [UnityTest]
+        public IEnumerator ProfileDurationControlsTheTransition()
+        {
+            var instant = ScriptableObject.CreateInstance<ScreenTransitionProfile>();
+            DurationField.SetValue(instant, 0f);
+            var slow = ScriptableObject.CreateInstance<ScreenTransitionProfile>();
+            DurationField.SetValue(slow, 10f);
+            try
+            {
+                var screen = CreateScreen(animated: true);
+                ProfileField.SetValue(screen, instant);
+                screen.Open();
+                Assert.That(screen.State, Is.EqualTo(ScreenState.Open), "A zero-length fade completes synchronously.");
+                Assert.That(screen.GetComponent<CanvasGroup>().alpha, Is.EqualTo(1f));
+
+                var slowScreen = CreateScreen(animated: true);
+                ProfileField.SetValue(slowScreen, slow);
+                slowScreen.Open();
+                for (var i = 0; i < 3; i++) yield return null;
+                Assert.That(slowScreen.State, Is.EqualTo(ScreenState.Opening));
+                Assert.That(slowScreen.GetComponent<CanvasGroup>().alpha, Is.LessThan(0.5f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(instant);
+                Object.DestroyImmediate(slow);
+            }
         }
 
         [Test]
