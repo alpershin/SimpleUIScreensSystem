@@ -27,6 +27,16 @@ jobs:
       - name: Check out the package
         uses: actions/checkout@v4
 
+      - name: Check that a Unity licence is configured
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        run: |
+          if [ -z "$UNITY_LICENSE" ] && [ -z "$UNITY_EMAIL" ]; then
+            echo "::error::No Unity licence is configured. Add the UNITY_LICENSE secret (or UNITY_EMAIL and UNITY_PASSWORD); see .github/workflows/README.md."
+            exit 1
+          fi
+
       - name: Create the host project
         run: |
           set -eux
@@ -64,7 +74,6 @@ jobs:
           projectPath: ${{ env.PROJECT_PATH }}
           unityVersion: ${{ env.UNITY_VERSION }}
           testMode: all
-          coverageEnabled: false
           artifactsPath: test-results
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test results
